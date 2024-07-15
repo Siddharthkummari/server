@@ -152,10 +152,8 @@ export default async () => {
 	setInterval(Clean_up, 15 * 60 * 1000);
 
 	// Start server
-	const port = process.env.PORT || 4000;
-	server.listen(port, () => {
-		console.log(`Server running on port ${port}`);
-	});
+	const port = process.env.PORT;
+	server.listen(port);
 
 	// Graceful shutdown
 	const gracefulShutdown = async (signal) => {
