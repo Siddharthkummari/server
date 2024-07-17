@@ -31,7 +31,7 @@ export const generateToken = async (req, res, next) => {
 			maxAge: 20 * 60 * 1000, // 15 minutes
 			secure: true,
 			path: "/", // Ensure the cookie is available for all paths
-			sameSite: "strict",
+			sameSite: "none",
 		});
 
 		// Set refresh token cookie
@@ -40,7 +40,7 @@ export const generateToken = async (req, res, next) => {
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 			secure: true,
 			path: "/", 
-			sameSite: "strict",
+			sameSite: "none",
 		});
 		// Save the Refresh Token in the MongoDB database
 
