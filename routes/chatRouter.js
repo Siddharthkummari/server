@@ -13,12 +13,7 @@ import {
 } from "../middleware/tokenUtils.js";
 
 let config = {
-	origin: [
-		"http://localhost:5173",
-		"https://devrooms-manit.netlify.app",
-		"https://main.dhsovaiqjsv6b.amplifyapp.com/",
-		
-	],
+	origin: ["https://main.dhsovaiqjsv6b.amplifyapp.com/","https://devrooms-manit.netlify.app/"],
 	methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 	allowedHeaders: ["Content-Type", "Authorization","Cookie"],
 	credentials: true,
