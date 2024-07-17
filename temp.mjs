@@ -88,7 +88,7 @@ export default async () => {
 			origin: [
 				"http://localhost:5173",
 				"https://devrooms-manit.netlify.app",
-				"https://main.dhsovaiqjsv6b.amplifyapp.com"
+				"https://main.dhsovaiqjsv6b.amplifyapp.com",
 			],
 			methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 			allowedHeaders: ["Content-Type", "Cookie"],
