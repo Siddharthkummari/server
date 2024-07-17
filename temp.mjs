@@ -85,7 +85,7 @@ export default async () => {
 	// CORS and middleware setup
 	app.use(
 		cors({
-			origin:["https://main.dhsovaiqjsv6b.amplifyapp.com/","https://devrooms-manit.netlify.app/"],
+			origin:["https://main.dhsovaiqjsv6b.amplifyapp.com","https://devrooms-manit.netlify.app"],
 			methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 			allowedHeaders: ["Content-Type", "Cookie"],
 			credentials: true,
