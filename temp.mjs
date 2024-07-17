@@ -32,7 +32,7 @@ export default async () => {
 
 	const io = new Server(server, {
 		cors: {
-			origin: "*",
+			origin: "https://main.dhsovaiqjsv6b.amplifyapp.com/",
 			methods: ["*"],
 		},
 		pingTimeout: 60000,
