@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "server-cluster",
   "version": "1.0.0",
   "description": "",
   "main": "server-cluster.mjs",
