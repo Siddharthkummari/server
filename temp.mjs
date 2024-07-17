@@ -32,7 +32,7 @@ export default async () => {
 
 	const io = new Server(server, {
 		cors: {
-			origin: "https://main.dhsovaiqjsv6b.amplifyapp.com/",
+			origin: ["https://main.dhsovaiqjsv6b.amplifyapp.com/","https://devrooms-manit.netlify.app/"],
 			methods: ["*"],
 		},
 		pingTimeout: 60000,
@@ -85,11 +85,7 @@ export default async () => {
 	// CORS and middleware setup
 	app.use(
 		cors({
-			origin: [
-				"http://localhost:5173",
-				"https://devrooms-manit.netlify.app",
-				"https://main.dhsovaiqjsv6b.amplifyapp.com",
-			],
+			origin:["https://main.dhsovaiqjsv6b.amplifyapp.com/","https://devrooms-manit.netlify.app/"],
 			methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 			allowedHeaders: ["Content-Type", "Cookie"],
 			credentials: true,
