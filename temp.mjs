@@ -32,7 +32,7 @@ export default async () => {
 
 	const io = new Server(server, {
 		cors: {
-			origin: ["https://main.dhsovaiqjsv6b.amplifyapp.com/","https://devrooms-manit.netlify.app/"],
+			origin: ["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
 			methods: ["*"],
 		},
 		pingTimeout: 60000,
@@ -85,7 +85,7 @@ export default async () => {
 	// CORS and middleware setup
 	app.use(
 		cors({
-			origin:["https://main.dhsovaiqjsv6b.amplifyapp.com","https://devrooms-manit.netlify.app"],
+			origin:["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
 			methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 			allowedHeaders: ["Content-Type", "Cookie"],
 			credentials: true,

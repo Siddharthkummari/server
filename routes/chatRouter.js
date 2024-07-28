@@ -11,9 +11,10 @@ import {
 	verifyRefreshToken,
 	generateAccessteToken,
 } from "../middleware/tokenUtils.js";
+import RefreshToken from "../models/RefreshToken.js";
 
 let config = {
-	origin: ["https://main.dhsovaiqjsv6b.amplifyapp.com/","https://devrooms-manit.netlify.app/"],
+	origin: ["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
 	methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 	allowedHeaders: ["Content-Type", "Authorization","Cookie"],
 	credentials: true,
@@ -53,32 +54,29 @@ router.post(
 	}
 );
 
-router.delete(
-	"/chat/logout",
-	CrossValidateRefreshToken,
-	verifyAccessToken,
-	(req, res) => {
-		//We are going to delete the tokens from the database as well as clearing them
-		const RefreshToken = req.cookies.refreshToken;
-		if (!RefreshToken) {
-			return res.status(401).json({ error: "No refresh token found" });
-		}
-		//Find it in the database and delete it
-		//Then clear the cookies
-		RefreshToken.findOneAndDelete(
-			{ refreshToken: RefreshToken },
-			(err, doc) => {
-				if (err) {
-					return res.status(500).json({ error: err.message });
-				}
-				return res.status(200).json({ message: "Logout successful" });
-			}
-		);
+router.delete("/chat/logout", async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
 
-		//Now clear the cookies
-		res.clearCookie("accessToken");
-		res.clearCookie("refreshToken");
-	}
-);
+    if (!refreshToken) {
+        console.error("Logging Out but no refresh token found");
+        return res.status(401).json({ error: "No refresh token found" });
+    }
+
+    try {
+        // Use await to find and delete the refresh token
+        const doc = await RefreshToken.findOneAndDelete({ token: refreshToken });
+
+        if (!doc) {
+            return res.status(404).json({ error: "Refresh token not found in the database" });
+        }
+
+        // Clear the cookies after successfully deleting the token
+        res.clearCookie("accessToken");
+        res.clearCookie("refreshToken");
+        return res.status(200).json({ message: "Logout successful" });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
 
 export default router;
