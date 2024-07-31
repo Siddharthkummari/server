@@ -22,170 +22,181 @@ const __dirname = dirname(__filename);
 const buildPath = join(__dirname, "..", "client", "dist");
 
 export default async () => {
-	const app = express();
-	const server = http.createServer(app);
+  const app = express();
+  const server = http.createServer(app);
 
-	// Redis setup
-	const redisHost = process.env.REDIS_HOST ;
-	const redisPort = process.env.REDIS_PORT ;
-	const redisPassword = process.env.REDIS_PASSWORD;
+  // Redis setup
+  const redisHost = process.env.REDIS_HOST;
+  const redisPort = process.env.REDIS_PORT;
+  const redisPassword = process.env.REDIS_PASSWORD;
 
-	const io = new Server(server, {
-		cors: {
-			origin: ["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
-			methods: ["*"],
-		},
-		pingTimeout: 60000,
-		pingInterval: 25000,
-	});
+  const io = new Server(server, {
+    cors: {
+      origin: ["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
+      methods: ["*"],
+    },
+    pingTimeout: 60000,
+    pingInterval: 25000,
+  });
 
-	const createRedisClient = () => {
-		return createClient({
-			socket: {
-				host: redisHost,
-				port: redisPort,
-			},
-			password: redisPassword,
+  const createRedisClient = () => {
+    return createClient({
+      socket: {
+        host: redisHost,
+        port: redisPort,
+      },
+      password: redisPassword,
+    });
+  };
+
+  const pubClient = createRedisClient();
+  const subClient = createRedisClient();
+
+const handleRedisError = (client, error) => {
+	console.error(`Redis client error: ${error}`);
+	
+	client.quit(); // Close the client connection
+	setTimeout(() => {
+		const newClient = createRedisClient(); // Create a new client
+		newClient.on("error", (err) => handleRedisError(newClient, err)); // Handle errors for the new client
+		newClient.on("connect", () => {
+			console.log("Successfully reconnected to Redis");
+			// Update the pubClient and subClient references
+			pubClient = newClient;
+			subClient = newClient;
+			io.adapter(createAdapter(pubClient, subClient)); // Update the adapter with the new clients
 		});
-	};
+		newClient.connect(); // Connect to Redis
+	}, 5000); // Retry after 5 seconds
+};
 
-	const pubClient = createRedisClient();
-	const subClient = createRedisClient();
+  const connectRedis = async () => {
+    try {
+      pubClient.on("error", (err) => handleRedisError(pubClient, err));
+      subClient.on("error", (err) => handleRedisError(subClient, err));
 
-	const handleRedisError = (client, error) => {
-		console.error(`Redis client error: ${error}`);
-		// Implement reconnection logic here
-	};
+      await pubClient.connect();
+      await subClient.connect();
+      console.log("Successfully connected to Redis");
 
-	const connectRedis = async () => {
-		try {
-			pubClient.on("error", (err) => handleRedisError(pubClient, err));
-			subClient.on("error", (err) => handleRedisError(subClient, err));
+      pubClient.on("reconnecting", () =>
+        console.log("Pub client reconnecting to Redis...")
+      );
+      subClient.on("reconnecting", () =>
+        console.log("Sub client reconnecting to Redis...")
+      );
+    } catch (error) {
+      console.error("Failed to connect to Redis:", error);
+      // Implement retry logic here instead of exiting
+    }
+  };
 
-			await pubClient.connect();
-			await subClient.connect();
-			console.log("Successfully connected to Redis");
+  await connectRedis();
 
-			pubClient.on("reconnecting", () =>
-				console.log("Pub client reconnecting to Redis...")
-			);
-			subClient.on("reconnecting", () =>
-				console.log("Sub client reconnecting to Redis...")
-			);
-		} catch (error) {
-			console.error("Failed to connect to Redis:", error);
-			// Implement retry logic here instead of exiting
-		}
-	};
+  io.adapter(createAdapter(pubClient, subClient));
 
-	await connectRedis();
+  // CORS and middleware setup
+  app.use(
+    cors({
+      origin: ["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Cookie"],
+      credentials: true,
+    })
+  );
+  app.use(express.json());
+  app.use(cookieParser());
 
-	io.adapter(createAdapter(pubClient, subClient));
+  // MongoDB setup
+  const uri = process.env.MONGO_DB_URI;
+  const mongoClientOptions = {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+    socketTimeoutMS: 45000,
+    connectTimeoutMS: 45000,
+    serverSelectionTimeoutMS: 45000,
+  };
 
-	// CORS and middleware setup
-	app.use(
-		cors({
-			origin:["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
-			methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-			allowedHeaders: ["Content-Type", "Cookie"],
-			credentials: true,
-		})
-	);
-	app.use(express.json());
-	app.use(cookieParser());
+  const client = new MongoClient(uri, mongoClientOptions);
 
-	// MongoDB setup
-	const uri = process.env.MONGO_DB_URI;
-	const mongoClientOptions = {
-		serverApi: {
-			version: ServerApiVersion.v1,
-			strict: true,
-			deprecationErrors: true,
-		},
-		socketTimeoutMS: 45000,
-		connectTimeoutMS: 45000,
-		serverSelectionTimeoutMS: 45000,
-	};
+  const connectToMongo = async () => {
+    try {
+      await mongoose.connect(uri, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 45000,
+        serverSelectionTimeoutMS: 45000,
+      });
+      console.log("Mongoose connected to MongoDB");
 
-	const client = new MongoClient(uri, mongoClientOptions);
+      await client.connect();
+      await client.db("admin").command({ ping: 1 });
+      console.log("Pinged your deployment. MongoClient successfully connected to MongoDB!");
+    } catch (error) {
+      console.error("Failed to connect to MongoDB:", error);
+      setTimeout(connectToMongo, 5000); // Retry after 5 seconds
+    }
+  };
 
-	const connectToMongo = async () => {
-		try {
-			await mongoose.connect(uri, {
-				useNewUrlParser: true,
-				useUnifiedTopology: true,
-				socketTimeoutMS: 45000,
-				connectTimeoutMS: 45000,
-				serverSelectionTimeoutMS: 45000,
-			});
-			console.log("Mongoose connected to MongoDB");
+  await connectToMongo();
 
-			await client.connect();
-			await client.db("admin").command({ ping: 1 });
-			console.log(
-				"Pinged your deployment. MongoClient successfully connected to MongoDB!"
-			);
-		} catch (error) {
-			console.error("Failed to connect to MongoDB:", error);
-			// Implement retry logic here
-			setTimeout(connectToMongo, 5000); // Retry after 5 seconds
-		}
-	};
+  // Routes
+  app.use("/api", chatRouter);
+  app.use("/analyze-api", analyzeRouter);
+  app.use(express.static(buildPath));
+  app.get("*", (req, res) => {
+    res.sendFile(join(buildPath, "index.html"));
+  });
 
-	await connectToMongo();
+  // Socket events
+  //Passing the redis connection instance to the socket Controller to use it in the socket events to store the socketIDs
+  handleSocketEvents(io,pubClient);
 
-	// Routes
-	app.use("/api", chatRouter);
-	app.use("/analyze-api", analyzeRouter);
-	app.use(express.static(buildPath));
-	app.get("*", (req, res) => {
-		res.sendFile(join(buildPath, "index.html"));
-	});
+  // Cleanup
+  setInterval(Clean_up, 15 * 60 * 1000);
 
-	// Socket events
-	handleSocketEvents(io);
+  // Start server
+  const port = process.env.PORT;
+  server.listen(port);
 
-	// Cleanup
-	setInterval(Clean_up, 15 * 60 * 1000);
+  // Graceful shutdown
+  const gracefulShutdown = async (signal) => {
+    console.log(`${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+      console.log("HTTP server closed.");
+    });
 
-	// Start server
-	const port = process.env.PORT;
-	server.listen(port);
+    try {
+      await client.close();
+      console.log("MongoDB connection closed.");
+      await mongoose.connection.close();
+      console.log("Mongoose connection closed.");
+      await pubClient.quit();
+      await subClient.quit();
+      console.log("Redis connections closed.");
+      process.exit(0);
+    } catch (err) {
+      console.error("Error during graceful shutdown:", err);
+      process.exit(1);
+    }
+  };
 
-	// Graceful shutdown
-	const gracefulShutdown = async (signal) => {
-		console.log(`${signal} received. Shutting down gracefully...`);
-		server.close(() => {
-			console.log("HTTP server closed.");
-		});
+  // Handle various shutdown signals
+  ["SIGINT", "SIGTERM", "SIGQUIT"].forEach((signal) => {
+    process.on(signal, () => gracefulShutdown(signal));
+  });
 
-		try {
-			await client.close();
-			console.log("MongoDB connection closed.");
-			await mongoose.connection.close();
-			console.log("Mongoose connection closed.");
-			await pubClient.quit();
-			await subClient.quit();
-			console.log("Redis connections closed.");
-			process.exit(0);
-		} catch (err) {
-			console.error("Error during graceful shutdown:", err);
-			process.exit(1);
-		}
-	};
+  process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception:", err);
+    gracefulShutdown("Uncaught Exception");
+  });
 
-	// Handle various shutdown signals
-	["SIGINT", "SIGTERM", "SIGQUIT"].forEach((signal) => {
-		process.on(signal, () => gracefulShutdown(signal));
-	});
-
-	process.on("uncaughtException", (err) => {
-		console.error("Uncaught Exception:", err);
-		gracefulShutdown("Uncaught Exception");
-	});
-
-	process.on("unhandledRejection", (reason, promise) => {
-		console.error("Unhandled Rejection at:", promise, "reason:", reason);
-		gracefulShutdown("Unhandled Rejection");
-	});
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at:", promise, "reason:", reason);
+    gracefulShutdown("Unhandled Rejection");
+  });
 };
