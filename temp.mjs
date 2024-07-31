@@ -32,7 +32,7 @@ export default async () => {
 
   const io = new Server(server, {
     cors: {
-      origin: ["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
+      origin: ["https://devrooms-manit.netlify.app"],
       methods: ["*"],
     },
     pingTimeout: 60000,
@@ -98,7 +98,7 @@ const handleRedisError = (client, error) => {
   // CORS and middleware setup
   app.use(
     cors({
-      origin: ["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
+      origin: ["https://devrooms-manit.netlify.app"],
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Cookie"],
       credentials: true,
