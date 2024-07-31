@@ -14,7 +14,7 @@ import {
 import RefreshToken from "../models/RefreshToken.js";
 
 let config = {
-	origin: ["https://urban-space-guacamole-j6www7rv49j3qpr6-3000.app.github.dev"],
+	origin: ["https://devrooms-manit.netlify.app"],
 	methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 	allowedHeaders: ["Content-Type", "Authorization","Cookie"],
 	credentials: true,
